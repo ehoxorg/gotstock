@@ -8,8 +8,16 @@ services:
       - db
     ports:
       - 8080:8080
+    environment:
+      - RUN_UP_MIGRATION=false
+      - PSQL_CONN_STRING=postgres://gotstock_user:123@localhost:5432/gotstockapi?sslmode=disable
   db:
     image: postgres
     restart: always
     environment:
-      POSTGRES_PASSWORD: example
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./db:/docker-entrypoint-initdb.d/

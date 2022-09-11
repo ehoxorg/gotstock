@@ -1,0 +1,4 @@
+export POSTGRESQL_URL='postgres://gotstock_user:123@localhost:5432/gotstockapi?sslmode=disable'
+migrate -database ${POSTGRESQL_URL} -path db/migrations up
+docker run --name gotstock-db-1 -e POSTGRES_PASSWORD=123 -d -p 5432:5432 gotstockapi
+docker exec -it gotstock-db-1 psql -U gotstock_user -W gotstockapi

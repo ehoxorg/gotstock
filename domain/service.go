@@ -1,51 +1,86 @@
 package domain
 
-import "github.com/edihoxhalli/gotstock/db"
+import (
+	"errors"
+	"log"
+	"net/http"
 
-func AddProduct(p *Product) *Product {
+	"github.com/edihoxhalli/gotstock/db"
+)
+
+func AddProduct(p *db.Product) (*db.Product, int, error) {
+	if p.ID != nil {
+		return nil, http.StatusBadRequest, errors.New("NEW PRODUCT MUST NOT HAVE VALUE FOR ID")
+	}
+	if p.Name == "" {
+		return nil, http.StatusBadRequest, errors.New("NEW PRODUCT MUST HAVE A NAME")
+	}
+	if p.ProductCode == "" {
+		return nil, http.StatusBadRequest, errors.New("NEW PRODUCT MUST HAVE A PRODUCT CODE")
+	}
+	_, err, noRows := db.GetProduct(&p.ProductCode, nil)
+	if !noRows {
+		log.Println(err)
+		return nil, http.StatusBadRequest, errors.New("PRODUCT CODE ALREADY EXISTS IN DB")
+	}
 	// save
-	db.Connection()
-	return &Product{
-		ProductCode:   "111",
-		Name:          "Lesh111",
-		StockQuantity: 111,
+	r, err := db.InsertProduct(*p)
+	if err != nil {
+		return nil, http.StatusInternalServerError, err
 	}
+	return r, http.StatusCreated, nil
 }
-func GetProduct(pcode string) *Product {
+
+func GetProduct(pcode string) (*db.Product, int, error) {
 	// get
-	db.Connection()
-	return &Product{
-		ProductCode:   "111",
-		Name:          "Lesh111",
-		StockQuantity: 111,
+	p, err, noRows := db.GetProduct(&pcode, nil)
+	if noRows {
+		return nil, http.StatusNotFound, errors.New("PRODUCT CODE DOES NOT EXISTS IN DB")
 	}
+	if err != nil {
+		return nil, http.StatusInternalServerError, err
+	}
+	return p, http.StatusOK, nil
 }
-func GetAll() *[]Product {
+
+func GetAll() ([]db.Product, int, error) {
 	// get ALL
-	db.Connection()
-	return &[]Product{
-		{
-			ProductCode:   "111",
-			Name:          "Lesh111",
-			StockQuantity: 111,
-		},
-		{
-			ProductCode:   "222",
-			Name:          "Lesh222",
-			StockQuantity: 222,
-		},
+	ps, err := db.GetAllProducts()
+	if err != nil {
+		return nil, http.StatusInternalServerError, err
 	}
+	return ps, http.StatusOK, nil
 }
-func UpdateProduct(p *Product) *Product {
+
+func UpdateProduct(p *db.Product, code string) (*db.Product, int, error) {
+	p.ProductCode = code
+	if p.ID != nil {
+		return nil, http.StatusBadRequest, errors.New("PRODUCT MUST NOT HAVE VALUE FOR ID")
+	}
+	if p.Name == "" {
+		return nil, http.StatusBadRequest, errors.New("PRODUCT MUST HAVE A NAME")
+	}
+	if p.ProductCode == "" {
+		return nil, http.StatusBadRequest, errors.New("PRODUCT MUST HAVE A PRODUCT CODE")
+	}
+	_, err, noRows := db.GetProduct(&code, nil)
+	if noRows {
+		log.Println(err)
+		return nil, http.StatusBadRequest, errors.New("PRODUCT CODE DOES NOT EXISTS IN DB")
+	}
 	// update
-	db.Connection()
-	return &Product{
-		ProductCode:   "222",
-		Name:          "Lesh222",
-		StockQuantity: 222,
+	r, err := db.UpdateProduct(*p)
+	if err != nil {
+		return nil, http.StatusInternalServerError, err
 	}
+	return r, http.StatusAccepted, nil
 }
-func DeleteProduct(pcode string) {
+
+func DeleteProduct(pcode string) (int, error) {
 	// delete
-	db.Connection()
+	err := db.DeleteProduct(pcode)
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
+	return http.StatusCreated, nil
 }
