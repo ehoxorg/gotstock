@@ -1,0 +1,11 @@
+#!/bin/ash
+NOT_READY=1
+while [ $NOT_READY -gt 0 ]
+do 
+    pg_isready --dbname=gotstockapi --host=host.docker.internal --port=5432 --username=gotstock_user
+    NOT_READY=$?
+    sleep 1
+done;
+./gotstock-api
+sleep 10
+go test -v ./it
